@@ -13,7 +13,6 @@ In this update, I've encountered some issues with the comments in the code. Ther
 3. **Game States:** I've implemented changes in game states. The `mpause` state removes the game thread and cannot coexist with other active game states. On the other hand, the `mplaying` state creates a new thread. We need to determine where the check for these states should occur and provide the gamer with access to close the game, making `mPause` more like a load-in splash screen. It's also worth considering if a game thread that doesn't utilize a tick rate needs to run.
 
 
-4. **Refactoring Control:** It might be necessary to refactor how actions with the snake are handled. Control seems to pass through a switch operation with a single event, "action up." This control logic may have been shifted to `Snake.java`.
+4. **SoundPool Deprecation:** Note that the `SoundPool` class is marked as deprecated, so we should explore alternatives for handling sound in the game.
 
-
-5. **SoundPool Deprecation:** Note that the `SoundPool` class is marked as deprecated, so we should explore alternatives for handling sound in the game.
+Edit: removed point on review
