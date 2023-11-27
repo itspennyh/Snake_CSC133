@@ -9,292 +9,177 @@ import android.graphics.Paint;
 import android.graphics.Point;
 import android.view.MotionEvent;
 
-
 import java.util.ArrayList;
 
 class Snake {
 
-    // The location in the grid of all the segments
-    private ArrayList<Point> segmentLocations;
-
-    // How big is each segment of the snake?
-    private int mSegmentSize;
-
-    // How big is the entire grid
-    private Point mMoveRange;
-
-    // Where is the centre of the screen
-    // horizontally in pixels?
-    private int halfWayPoint;
-
-    // For tracking movement Heading
     private enum Heading {
         UP, RIGHT, DOWN, LEFT
     }
 
-    // Start by heading to the right
+    private static final int INITIAL_SEGMENT = 1;
+    private static final int OFF_SCREEN = -10;
+
+    private ArrayList<Point> segmentLocations;
+    private int mSegmentSize;
+    private Point mMoveRange;
+    private int halfWayPoint;
+
     private Heading heading = Heading.RIGHT;
 
-    // A bitmap for each direction the head can face
-    private Bitmap mBitmapHeadRight;
-    private Bitmap mBitmapHeadLeft;
-    private Bitmap mBitmapHeadUp;
-    private Bitmap mBitmapHeadDown;
-
-    // A bitmap for the body
+    private Bitmap[] headBitmaps = new Bitmap[4];
     private Bitmap mBitmapBody;
 
-
-    Snake(Context context, Point mr, int ss) {
-
-        // Initialize our ArrayList
+    Snake(Context context, Point moveRange, int segmentSize) {
         segmentLocations = new ArrayList<>();
+        mMoveRange = moveRange;
+        mSegmentSize = segmentSize;
+        initializeBitmaps(context);
+        halfWayPoint = moveRange.x * segmentSize / 2;
+    }
 
-        // Initialize the segment size and movement
-        // range from the passed in parameters
-        mSegmentSize = ss;
-        mMoveRange = mr;
+    private void initializeBitmaps(Context context) {
+        Bitmap originalHead = BitmapFactory.decodeResource(context.getResources(), R.drawable.head);
+        headBitmaps[Heading.RIGHT.ordinal()] = Bitmap.createScaledBitmap(originalHead, mSegmentSize, mSegmentSize, false);
+        headBitmaps[Heading.LEFT.ordinal()] = createFlippedBitmap(headBitmaps[Heading.RIGHT.ordinal()]);
+        headBitmaps[Heading.UP.ordinal()] = rotateBitmap(headBitmaps[Heading.RIGHT.ordinal()], -90);
+        headBitmaps[Heading.DOWN.ordinal()] = rotateBitmap(headBitmaps[Heading.RIGHT.ordinal()], 180);
 
-        // Create and scale the bitmaps
-        mBitmapHeadRight = BitmapFactory
-                .decodeResource(context.getResources(),
-                        R.drawable.head);
+        mBitmapBody = Bitmap.createScaledBitmap(BitmapFactory.decodeResource(context.getResources(), R.drawable.body), mSegmentSize, mSegmentSize, false);
+    }
 
-        // Create 3 more versions of the head for different headings
-        mBitmapHeadLeft = BitmapFactory
-                .decodeResource(context.getResources(),
-                        R.drawable.head);
-
-        mBitmapHeadUp = BitmapFactory
-                .decodeResource(context.getResources(),
-                        R.drawable.head);
-
-        mBitmapHeadDown = BitmapFactory
-                .decodeResource(context.getResources(),
-                        R.drawable.head);
-
-        // Modify the bitmaps to face the snake head
-        // in the correct direction
-        mBitmapHeadRight = Bitmap
-                .createScaledBitmap(mBitmapHeadRight,
-                        ss, ss, false);
-
-        // A matrix for scaling
+    private Bitmap createFlippedBitmap(Bitmap original) {
         Matrix matrix = new Matrix();
         matrix.preScale(-1, 1);
-
-        mBitmapHeadLeft = Bitmap
-                .createBitmap(mBitmapHeadRight,
-                        0, 0, ss, ss, matrix, true);
-
-        // A matrix for rotating
-        matrix.preRotate(-90);
-        mBitmapHeadUp = Bitmap
-                .createBitmap(mBitmapHeadRight,
-                        0, 0, ss, ss, matrix, true);
-
-        // Matrix operations are cumulative
-        // so rotate by 180 to face down
-        matrix.preRotate(180);
-        mBitmapHeadDown = Bitmap
-                .createBitmap(mBitmapHeadRight,
-                        0, 0, ss, ss, matrix, true);
-
-        // Create and scale the body
-        mBitmapBody = BitmapFactory
-                .decodeResource(context.getResources(),
-                        R.drawable.body);
-
-        mBitmapBody = Bitmap
-                .createScaledBitmap(mBitmapBody,
-                        ss, ss, false);
-
-        // The halfway point across the screen in pixels
-        // Used to detect which side of screen was pressed
-        halfWayPoint = mr.x * ss / 2;
+        return Bitmap.createBitmap(original, 0, 0, mSegmentSize, mSegmentSize, matrix, true);
     }
 
-    // Get the snake ready for a new game
-    void reset(int w, int h) {
+    private Bitmap rotateBitmap(Bitmap original, float degrees) {
+        Matrix matrix = new Matrix();
+        matrix.preRotate(degrees);
+        return Bitmap.createBitmap(original, 0, 0, mSegmentSize, mSegmentSize, matrix, true);
+    }
 
-        // Reset the heading
+    void reset(int screenWidth, int screenHeight) {
         heading = Heading.RIGHT;
-
-        // Delete the old contents of the ArrayList
         segmentLocations.clear();
-
-        // Start with a single snake segment
-        segmentLocations.add(new Point(w / 2, h / 2));
+        segmentLocations.add(new Point(screenWidth / 2, screenHeight / 2));
     }
-
 
     void move() {
-        // Move the body
-        // Start at the back and move it
-        // to the position of the segment in front of it
         for (int i = segmentLocations.size() - 1; i > 0; i--) {
-
-            // Make it the same value as the next segment
-            // going forwards towards the head
-            segmentLocations.get(i).x = segmentLocations.get(i - 1).x;
-            segmentLocations.get(i).y = segmentLocations.get(i - 1).y;
+            Point current = segmentLocations.get(i);
+            Point next = segmentLocations.get(i - 1);
+            current.set(next.x, next.y);
         }
 
-        // Move the head in the appropriate heading
-        // Get the existing head position
-        Point p = segmentLocations.get(0);
+        Point head = segmentLocations.get(0);
+        moveHead(head);
+    }
 
-        // Move it appropriately
+    private void moveHead(Point head) {
         switch (heading) {
             case UP:
-                p.y--;
+                head.y--;
                 break;
-
             case RIGHT:
-                p.x++;
+                head.x++;
                 break;
-
             case DOWN:
-                p.y++;
+                head.y++;
                 break;
-
             case LEFT:
-                p.x--;
+                head.x--;
                 break;
         }
-
     }
 
     boolean detectDeath() {
-        // Has the snake died?
-        boolean dead = false;
-
-        // Hit any of the screen edges
-        if (segmentLocations.get(0).x == -1 ||
-                segmentLocations.get(0).x > mMoveRange.x ||
-                segmentLocations.get(0).y == -1 ||
-                segmentLocations.get(0).y > mMoveRange.y) {
-
-            dead = true;
-        }
-
-        // Eaten itself?
-        for (int i = segmentLocations.size() - 1; i > 0; i--) {
-            // Have any of the sections collided with the head
-            if (segmentLocations.get(0).x == segmentLocations.get(i).x &&
-                    segmentLocations.get(0).y == segmentLocations.get(i).y) {
-
-                dead = true;
-            }
-        }
-        return dead;
+        return hitScreenEdges() || hitItself();
     }
 
-    boolean checkDinner(Point l) {
-        //if (snakeXs[0] == l.x && snakeYs[0] == l.y) {
-        if (segmentLocations.get(0).x == l.x &&
-                segmentLocations.get(0).y == l.y) {
+    private boolean hitScreenEdges() {
+        Point head = segmentLocations.get(0);
+        return head.x == -1 || head.x > mMoveRange.x || head.y == -1 || head.y > mMoveRange.y;
+    }
 
-            // Add a new Point to the list
-            // located off-screen.
-            // This is OK because on the next call to
-            // move it will take the position of
-            // the segment in front of it
-            segmentLocations.add(new Point(-10, -10));
+    private boolean hitItself() {
+        Point head = segmentLocations.get(0);
+        for (int i = segmentLocations.size() - 1; i > 0; i--) {
+            if (head.equals(segmentLocations.get(i))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    boolean checkDinner(Point foodLocation) {
+        if (segmentLocations.get(0).equals(foodLocation)) {
+            segmentLocations.add(new Point(OFF_SCREEN, OFF_SCREEN));
             return true;
         }
         return false;
     }
 
     void draw(Canvas canvas, Paint paint) {
-
-        // Don't run this code if ArrayList has nothing in it
         if (!segmentLocations.isEmpty()) {
-            // All the code from this method goes here
-            // Draw the head
-            switch (heading) {
-                case RIGHT:
-                    canvas.drawBitmap(mBitmapHeadRight,
-                            segmentLocations.get(0).x
-                                    * mSegmentSize,
-                            segmentLocations.get(0).y
-                                    * mSegmentSize, paint);
-                    break;
-
-                case LEFT:
-                    canvas.drawBitmap(mBitmapHeadLeft,
-                            segmentLocations.get(0).x
-                                    * mSegmentSize,
-                            segmentLocations.get(0).y
-                                    * mSegmentSize, paint);
-                    break;
-
-                case UP:
-                    canvas.drawBitmap(mBitmapHeadUp,
-                            segmentLocations.get(0).x
-                                    * mSegmentSize,
-                            segmentLocations.get(0).y
-                                    * mSegmentSize, paint);
-                    break;
-
-                case DOWN:
-                    canvas.drawBitmap(mBitmapHeadDown,
-                            segmentLocations.get(0).x
-                                    * mSegmentSize,
-                            segmentLocations.get(0).y
-                                    * mSegmentSize, paint);
-                    break;
-            }
-
-            // Draw the snake body one block at a time
-            for (int i = 1; i < segmentLocations.size(); i++) {
-                canvas.drawBitmap(mBitmapBody,
-                        segmentLocations.get(i).x
-                                * mSegmentSize,
-                        segmentLocations.get(i).y
-                                * mSegmentSize, paint);
-            }
+            drawHead(canvas);
+            drawBody(canvas);
         }
     }
 
+    private void drawHead(Canvas canvas) {
+        Bitmap headBitmap = headBitmaps[heading.ordinal()];
+        Point headLocation = segmentLocations.get(0);
+        canvas.drawBitmap(headBitmap, headLocation.x * mSegmentSize, headLocation.y * mSegmentSize, null);
+    }
 
-    // Handle changing direction
+    private void drawBody(Canvas canvas) {
+        for (int i = INITIAL_SEGMENT; i < segmentLocations.size(); i++) {
+            Point bodyLocation = segmentLocations.get(i);
+            canvas.drawBitmap(mBitmapBody, bodyLocation.x * mSegmentSize, bodyLocation.y * mSegmentSize, null);
+        }
+    }
+
     void switchHeading(MotionEvent motionEvent) {
-
-        // Is the tap on the right hand side?
         if (motionEvent.getX() >= halfWayPoint) {
-            switch (heading) {
-                // Rotate right
-                case UP:
-                    heading = Heading.RIGHT;
-                    break;
-                case RIGHT:
-                    heading = Heading.DOWN;
-                    break;
-                case DOWN:
-                    heading = Heading.LEFT;
-                    break;
-                case LEFT:
-                    heading = Heading.UP;
-                    break;
-
-            }
+            rotateRight();
         } else {
-            // Rotate left
-            switch (heading) {
-                case UP:
-                    heading = Heading.LEFT;
-                    break;
-                case LEFT:
-                    heading = Heading.DOWN;
-                    break;
-                case DOWN:
-                    heading = Heading.RIGHT;
-                    break;
-                case RIGHT:
-                    heading = Heading.UP;
-                    break;
-            }
+            rotateLeft();
+        }
+    }
+
+    private void rotateRight() {
+        switch (heading) {
+            case UP:
+                heading = Heading.RIGHT;
+                break;
+            case RIGHT:
+                heading = Heading.DOWN;
+                break;
+            case DOWN:
+                heading = Heading.LEFT;
+                break;
+            case LEFT:
+                heading = Heading.UP;
+                break;
+        }
+    }
+
+    private void rotateLeft() {
+        switch (heading) {
+            case UP:
+                heading = Heading.LEFT;
+                break;
+            case LEFT:
+                heading = Heading.DOWN;
+                break;
+            case DOWN:
+                heading = Heading.RIGHT;
+                break;
+            case RIGHT:
+                heading = Heading.UP;
+                break;
         }
     }
 }
