@@ -47,8 +47,10 @@ class SnakeGame extends SurfaceView implements Runnable{
 
     // A snake ssss
     private Snake mSnake;
-    // And an apple
+    // An apple
     private Apple mApple;
+    //And a rotten apple
+    private RottenApple mRottenApple;
 
 
     // This is the constructor method that gets called
@@ -100,6 +102,11 @@ class SnakeGame extends SurfaceView implements Runnable{
                         mNumBlocksHigh),
                 blockSize);
 
+        mRottenApple = new RottenApple(context,
+                new Point(NUM_BLOCKS_WIDE,
+                        mNumBlocksHigh),
+                blockSize);
+
         mSnake = new Snake(context,
                 new Point(NUM_BLOCKS_WIDE,
                         mNumBlocksHigh),
@@ -116,6 +123,9 @@ class SnakeGame extends SurfaceView implements Runnable{
 
         // Get the apple ready for dinner
         mApple.spawn();
+
+        //Get rotten apples ready
+        mRottenApple.spawn();
 
         // Reset the mScore
         mScore = 0;
@@ -168,29 +178,39 @@ class SnakeGame extends SurfaceView implements Runnable{
 
     // Update all the game objects
     public void update() {
-
         // Move the snake
         mSnake.move();
 
-        // Did the head of the snake eat the apple?
-        if(mSnake.checkDinner(mApple.getLocation())){
-            // This reminds me of Edge of Tomorrow.
-            // One day the apple will be ready!
-            mApple.spawn();
+        boolean eatenDinner = mSnake.checkDinner(mApple, mRottenApple);
 
-            // Add to  mScore
-            mScore = mScore + 1;
+        //Has the snake eaten before?
+        if(eatenDinner) {
+            Point head = mSnake.segmentLocations.get(0);
+            //checking if snake ate regular apple or rotten apple
 
-            // Play a sound
-            mSP.play(mEat_ID, 1, 1, 0, 0, 1);
+            //regular apple eaten, spawns again, adds 1 to score, sound plays
+            if (head.equals(mApple.getLocation())) {
+                mApple.spawn();
+                mScore = mScore + 1;
+                mSP.play(mEat_ID, 1, 1, 0, 0, 1);
+            }
+            //rotten apple eaten, spawns again, no change to score, no sound (as of now)
+            else if (head.equals(mRottenApple.getLocation())) {
+                mRottenApple.spawn();
+            }
         }
-
-        // Did the snake die?
-        if (mSnake.detectDeath()) {
-            // Pause the game ready to start again
+        //Snake has not eaten, eating RottenApple on empty stomach = death
+        else {
+            mPaused = true;
             mSP.play(mCrashID, 1, 1, 0, 0, 1);
 
-            mPaused =true;
+        }
+        //checks for the other death conditions (ie. running into tail or side of screen)
+        if (mSnake.detectDeath()) {
+            // Pause the game ready to start again
+            mPaused = true;
+            mSP.play(mCrashID, 1, 1, 0, 0, 1);
+
         }
 
     }
@@ -214,6 +234,7 @@ class SnakeGame extends SurfaceView implements Runnable{
 
             // Draw the apple and the snake
             mApple.draw(mCanvas, mPaint);
+            mRottenApple.draw(mCanvas, mPaint);
             mSnake.draw(mCanvas, mPaint);
 
             // Draw some text while paused

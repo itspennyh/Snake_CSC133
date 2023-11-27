@@ -15,7 +15,7 @@ import java.util.ArrayList;
 class Snake {
 
     // The location in the grid of all the segments
-    private ArrayList<Point> segmentLocations;
+    protected ArrayList<Point> segmentLocations;
 
     // How big is each segment of the snake?
     private int mSegmentSize;
@@ -112,6 +112,7 @@ class Snake {
         // The halfway point across the screen in pixels
         // Used to detect which side of screen was pressed
         halfWayPoint = mr.x * ss / 2;
+
     }
 
     // Get the snake ready for a new game
@@ -167,15 +168,13 @@ class Snake {
 
     boolean detectDeath() {
         // Has the snake died?
-        boolean dead = false;
 
         // Hit any of the screen edges
         if (segmentLocations.get(0).x == -1 ||
                 segmentLocations.get(0).x > mMoveRange.x ||
                 segmentLocations.get(0).y == -1 ||
                 segmentLocations.get(0).y > mMoveRange.y) {
-
-            dead = true;
+            return true;
         }
 
         // Eaten itself?
@@ -183,27 +182,39 @@ class Snake {
             // Have any of the sections collided with the head
             if (segmentLocations.get(0).x == segmentLocations.get(i).x &&
                     segmentLocations.get(0).y == segmentLocations.get(i).y) {
-
-                dead = true;
+                return true;
             }
         }
-        return dead;
+        return false;
     }
 
-    boolean checkDinner(Point l) {
-        //if (snakeXs[0] == l.x && snakeYs[0] == l.y) {
-        if (segmentLocations.get(0).x == l.x &&
-                segmentLocations.get(0).y == l.y) {
+    boolean checkDinner(Apple apple, RottenApple rottenApple) {
+        Point head = segmentLocations.get(0);
 
-            // Add a new Point to the list
-            // located off-screen.
-            // This is OK because on the next call to
-            // move it will take the position of
-            // the segment in front of it
+        //check for collision with regular apple
+        if (head.equals(apple.getLocation())) {
+            //adding new point to end of segment
             segmentLocations.add(new Point(-10, -10));
+            //continue game
             return true;
         }
-        return false;
+
+        //check for collision with rotten apple
+        if (head.equals(rottenApple.getLocation())) {
+            //removes one from body size
+            if (segmentLocations.size() > 1) {
+                //removing the last point from the segment
+                segmentLocations.remove(segmentLocations.size() - 1);
+                //continue game
+                return true;
+            }
+            else {
+                //condition for game over
+                return false;
+            }
+        }
+        //no collision detected, continue game
+        return true;
     }
 
     void draw(Canvas canvas, Paint paint) {

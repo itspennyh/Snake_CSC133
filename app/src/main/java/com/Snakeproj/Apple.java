@@ -14,12 +14,12 @@ class Apple {
 
     // The location of the apple on the grid
     // Not in pixels
-    private Point location = new Point();
+    protected Point location = new Point();
 
     // The range of values we can choose from
     // to spawn an apple
     private Point mSpawnRange;
-    private int mSize;
+    protected int mSize;
 
     // An image to represent the apple
     private Bitmap mBitmapApple;
@@ -62,4 +62,26 @@ class Apple {
 
     }
 
+}
+
+class RottenApple extends Apple {
+
+    private Bitmap mBitmapRottenApple;
+
+    //constructor for RottenApple class
+    public RottenApple(Context context, Point sr, int s) {
+        super(context, sr, s);
+
+        // Load the image to the bitmap
+        mBitmapRottenApple = BitmapFactory.decodeResource(context.getResources(), R.drawable.rottenapple);
+
+        // Resize the bitmap
+        mBitmapRottenApple = Bitmap.createScaledBitmap(mBitmapRottenApple, s, s, false);
+    }
+
+    @Override
+    void draw(Canvas canvas, Paint paint) {
+        canvas.drawBitmap(mBitmapRottenApple,
+                location.x * mSize, location.y * mSize, paint);
+    }
 }
