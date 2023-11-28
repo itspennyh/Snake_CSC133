@@ -40,6 +40,6 @@ public class SnakeActivity extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
-        mSnakeGame.pause();
+        mSnakeGame.stop();
     }
 }

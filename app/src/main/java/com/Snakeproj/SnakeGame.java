@@ -23,10 +23,27 @@ class SnakeGame extends SurfaceView implements Runnable{
     // Objects for the game loop/thread
     private Thread mThread = null;
     // Control pausing between updates
+
+    public enum gmSttMngr {
+        INSTANCE;
+        public enum stt {
+            PLAYING, PAUSED, STOPPED
+        }
+
+        // ingame variables could go here
+        private stt currStt = stt.STOPPED;
+
+        // setter n getters
+        public void setStt(stt newStt) {
+            this.currStt = newStt;
+        }
+
+        public stt getCurrStt() {
+            return currStt;
+        }
+    }
+
     private long mNextFrameTime;
-    // Is the game currently playing and or paused?
-    private volatile boolean mPlaying = false;
-    private volatile boolean mPaused = true;
 
     // for playing sound effects
     private SoundPool mSP;
@@ -49,6 +66,11 @@ class SnakeGame extends SurfaceView implements Runnable{
     private Snake mSnake;
     // And an apple
     private Apple mApple;
+
+    // Is the game currently playing and or paused?
+    //private volatile boolean mPlaying = false;
+    //private volatile boolean mPaused = true;
+    // Implementing singleton game state design
 
 
     // This is the constructor method that gets called
@@ -128,13 +150,13 @@ class SnakeGame extends SurfaceView implements Runnable{
     // Handles the game loop
     @Override
     public void run() {
-        while (mPlaying) {
-            if(!mPaused) {
+        while (gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.PLAYING) {
+
                 // Update 10 times a second
                 if (updateRequired()) {
                     update();
                 }
-            }
+
 
             draw();
         }
@@ -190,7 +212,7 @@ class SnakeGame extends SurfaceView implements Runnable{
             // Pause the game ready to start again
             mSP.play(mCrashID, 1, 1, 0, 0, 1);
 
-            mPaused =true;
+            gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.STOPPED);
         }
 
     }
@@ -206,7 +228,7 @@ class SnakeGame extends SurfaceView implements Runnable{
             mCanvas.drawColor(Color.argb(255, 26, 128, 182));
 
 
-            if(!mPaused) {
+            if(gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.PLAYING) {
                 // Set the size and color of the mPaint for the text
                 mPaint.setColor(Color.argb(255, 255, 255, 255));
                 mPaint.setTextSize(120);
@@ -243,8 +265,8 @@ class SnakeGame extends SurfaceView implements Runnable{
     public boolean onTouchEvent(MotionEvent motionEvent) {
         switch (motionEvent.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_UP:
-                if (mPaused) {
-                    mPaused = false;
+                if (gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.STOPPED) {
+                    gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.PLAYING);
                     newGame();
 
                     // Don't want to process snake direction for this tap
@@ -264,8 +286,8 @@ class SnakeGame extends SurfaceView implements Runnable{
 
 
     // Stop the thread
-    public void pause() {
-        mPlaying = false;
+    public void stop() {
+        gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.STOPPED);
         try {
             mThread.join();
         } catch (InterruptedException e) {
@@ -276,7 +298,7 @@ class SnakeGame extends SurfaceView implements Runnable{
 
     // Start the thread
     public void resume() {
-        mPlaying = true;
+        gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.PLAYING);
         mThread = new Thread(this);
         mThread.start();
     }
