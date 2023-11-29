@@ -16,7 +16,6 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
-
 import java.io.IOException;
 
 class SnakeGame extends SurfaceView implements Runnable{
@@ -54,6 +53,10 @@ class SnakeGame extends SurfaceView implements Runnable{
     private Snake mSnake;
     // And an apple
     private Apple mApple;
+
+    private boolean mGameOver = false;
+    private Rect quitButtonRect;
+
 
     // This is the constructor method that gets called
     // from SnakeActivity
@@ -109,10 +112,15 @@ class SnakeGame extends SurfaceView implements Runnable{
                         mNumBlocksHigh),
                 blockSize);
 
+        newGame();
+
     }
 
     // Called to start a new game
     public void newGame() {
+
+        mGameOver = false;
+        mPaused = false;
 
         // reset the snake
         mSnake.reset(NUM_BLOCKS_WIDE, mNumBlocksHigh);
@@ -127,7 +135,6 @@ class SnakeGame extends SurfaceView implements Runnable{
         mNextFrameTime = System.currentTimeMillis();
     }
 
-
     // Handles the game loop
     @Override
     public void run() {
@@ -141,7 +148,6 @@ class SnakeGame extends SurfaceView implements Runnable{
             draw();
         }
     }
-
 
     // Check to see if it is time for an update
     public boolean updateRequired() {
@@ -167,7 +173,6 @@ class SnakeGame extends SurfaceView implements Runnable{
         return false;
     }
 
-
     // Update all the game objects
     public void update() {
 
@@ -189,10 +194,10 @@ class SnakeGame extends SurfaceView implements Runnable{
 
         // Did the snake die?
         if (mSnake.detectDeath()) {
+            mGameOver = true;
+            mPaused = true;
             // Pause the game ready to start again
             mSP.play(mCrashID, 1, 1, 0, 0, 1);
-
-            mPaused =true;
         }
 
     }
@@ -217,24 +222,14 @@ class SnakeGame extends SurfaceView implements Runnable{
             mApple.draw(mCanvas, mPaint);
             mSnake.draw(mCanvas, mPaint);
 
-            // Draw some text while paused
-            if(mPaused){
+            // Draw some text while pausedG
+            if(mPaused && !mGameOver){
 
                 // Draw the pause screen
                 mPaint.setTextSize(60);
                 mPaint.setColor(Color.WHITE);
-                mCanvas.drawText("Game Paused. Press Pause to Resume", 100, 200, mPaint);
+                mCanvas.drawText("Game Paused. Press Pause to Resume", 100, 350, mPaint);
 
-                // Set the size and color of the mPaint for the text
-                mPaint.setColor(Color.argb(255, 255, 255, 255));
-                mPaint.setTextSize(60);
-
-                // Draw the message
-                // We will give this an international upgrade soon
-                mCanvas.drawText("Tap NG to Play a New Game!", 100, 350, mPaint);
-                /*mCanvas.drawText(getResources().
-                                getString(R.string.tap_to_play),
-                        200, 700, mPaint); */
             }
 
             // Initialize button paint
@@ -243,14 +238,6 @@ class SnakeGame extends SurfaceView implements Runnable{
                 buttonPaint.setColor(Color.BLACK);
                 buttonPaint.setAlpha(75); // Semi-transparent
             }
-
-            mPaint.setTextSize(80);
-            mPaint.setColor(Color.WHITE);
-            mCanvas.drawText("NG", 950, 950, mPaint);
-
-            mPaint.setTextSize(70);
-            mPaint.setColor(Color.WHITE);
-            mCanvas.drawText("Pause", 1150, 950, mPaint);
 
             // Define button positions and sizes
             int buttonWidth = 200;
@@ -279,14 +266,58 @@ class SnakeGame extends SurfaceView implements Runnable{
                 );
             }
 
+            // Draw the Quit button (optional)
+            if (quitButtonRect == null) {
+                quitButtonRect = new Rect(
+                        startX + buttonWidth + spacing,
+                        startY,
+                        startX + totalButtonWidth,
+                        startY + buttonHeight
+                );
+            }
+
             // Draw buttons
-            mCanvas.drawRect(newGameButtonRect, buttonPaint);
-            mCanvas.drawRect(pauseButtonRect, buttonPaint);
+            if (!mGameOver) {
+                mCanvas.drawRect(pauseButtonRect, buttonPaint);
+                mPaint.setTextSize(70);
+                mPaint.setColor(Color.WHITE);
+                mCanvas.drawText("Pause", 1120, 950, mPaint);
+            }
 
-            // Draw button labels
-            drawCenteredText(mCanvas, buttonPaint, "New Game", newGameButtonRect);
-            drawCenteredText(mCanvas, buttonPaint, "Pause", pauseButtonRect);
+            if (mGameOver) {
 
+                mCanvas.drawRect(newGameButtonRect, buttonPaint);
+
+                mPaint.setTextSize(80);
+                mPaint.setColor(Color.WHITE);
+                mCanvas.drawText("NG", 950, 950, mPaint);
+
+                mCanvas.drawRect(quitButtonRect, buttonPaint);
+
+                mPaint.setTextSize(80);
+                mPaint.setColor(Color.WHITE);
+                mCanvas.drawText("Quit", 1150, 950, mPaint);
+
+                // Set the size and color of the mPaint for the text
+                mPaint.setColor(Color.argb(255, 255, 255, 255));
+                mPaint.setTextSize(60);
+
+                // Draw the message
+                // We will give this an international upgrade soon
+                mCanvas.drawText("Tap NG to Play a New Game!", 100, 450, mPaint);
+                /*mCanvas.drawText(getResources().
+                                getString(R.string.tap_to_play),
+                        200, 700, mPaint); */
+
+                // Draw Game Over text
+                mPaint.setTextSize(100);
+                mCanvas.drawText("Game Over!", 100, 350, mPaint);
+
+                // Draw Quit Text
+                mPaint.setTextSize(60);
+                mCanvas.drawText("Tap Quit to Exit", 100, 550, mPaint);
+
+            }
 
             // Unlock the mCanvas and reveal the graphics for this frame
             mSurfaceHolder.unlockCanvasAndPost(mCanvas);
@@ -300,7 +331,6 @@ class SnakeGame extends SurfaceView implements Runnable{
         canvas.drawText(text, xPos, yPos, paint);
     }
 
-
     @Override
     public boolean onTouchEvent(MotionEvent motionEvent) {
         int x = (int) motionEvent.getX();
@@ -308,21 +338,35 @@ class SnakeGame extends SurfaceView implements Runnable{
 
         switch (motionEvent.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_DOWN:
-                if (newGameButtonRect.contains(x, y)) {
-                    mPaused = false;
-                    newGame();
-                    return true;
-                } else if (pauseButtonRect.contains(x, y)) {
-                    mPaused = !mPaused;
-                    return true;
-                } else if (!mPaused) {
-                    mSnake.switchHeading(motionEvent);
+                if (mGameOver) {
+                    // Game over screen is active
+                    if (newGameButtonRect.contains(x, y)) {
+                        mGameOver = false;
+                        mPaused = false;
+                        newGame();
+                        return true;
+                    }
+                    if (quitButtonRect != null && quitButtonRect.contains(x, y)) {
+                        System.exit(0);  // Quit the game
+                        return true;
+                    }
+                } else {
+                    // Game is not over - handle normal game touch events
+                    if (newGameButtonRect.contains(x, y)) {
+                        mPaused = false;
+                        newGame();
+                        return true;
+                    } else if (pauseButtonRect.contains(x, y)) {
+                        mPaused = !mPaused;
+                        return true;
+                    } else if (!mPaused) {
+                        mSnake.switchHeading(motionEvent);
+                    }
                 }
                 break;
         }
         return true;
     }
-
 
     // Stop the thread
     public void pause() {
