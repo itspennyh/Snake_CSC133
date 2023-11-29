@@ -23,6 +23,7 @@ class SnakeGame extends SurfaceView implements Runnable{
     // Objects for the game loop/thread
     private Thread mThread = null;
     // Control pausing between updates
+    private long mNextFrameTime;
 
     public enum gmSttMngr {
         INSTANCE;
@@ -31,19 +32,17 @@ class SnakeGame extends SurfaceView implements Runnable{
         }
 
         // ingame variables could go here
-        private stt currStt = stt.STOPPED;
+        volatile private stt currStt = stt.STOPPED;
 
         // setter n getters
-        public void setStt(stt newStt) {
+        public synchronized void setStt(stt newStt) {
             this.currStt = newStt;
         }
 
-        public stt getCurrStt() {
+        public synchronized stt getCurrStt() {
             return currStt;
         }
     }
-
-    private long mNextFrameTime;
 
     // for playing sound effects
     private SoundPool mSP;
@@ -151,6 +150,17 @@ class SnakeGame extends SurfaceView implements Runnable{
     @Override
     public void run() {
         while (gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.PLAYING) {
+
+                // THIS LINE HERE IS WHERE IT BROKE
+                /*
+
+                while (mPlaying) { ...
+                if(!mPaused) { ...
+
+                 */
+
+                // snippet logic above was reduced to the one line based on logic that !mPaused == mPlaying
+                // THIS IS NOT TRUE, and is trying to render snake into non-space
 
                 // Update 10 times a second
                 if (updateRequired()) {
