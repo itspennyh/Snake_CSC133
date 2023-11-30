@@ -188,7 +188,7 @@ class Snake {
         return false;
     }
 
-    boolean checkDinner(Apple apple, RottenApple rottenApple) {
+    boolean checkDinner(Apple apple, RottenApple rottenApple, Lava lava) {
         Point head = segmentLocations.get(0);
 
         //check for collision with regular apple
@@ -212,6 +212,10 @@ class Snake {
                 //condition for game over
                 return false;
             }
+        }
+        //had lava for dinner :( game over
+        if (head.equals(lava.getLocation())) {
+            return false;
         }
         //no collision detected, continue game
         return true;

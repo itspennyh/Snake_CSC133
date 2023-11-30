@@ -51,6 +51,8 @@ class SnakeGame extends SurfaceView implements Runnable{
     private Apple mApple;
     //And a rotten apple
     private RottenApple mRottenApple;
+    //And some Lava
+    private Lava mLava;
 
 
     // This is the constructor method that gets called
@@ -107,6 +109,11 @@ class SnakeGame extends SurfaceView implements Runnable{
                         mNumBlocksHigh),
                 blockSize);
 
+        mLava = new Lava(context,
+                new Point(NUM_BLOCKS_WIDE,
+                        mNumBlocksHigh),
+                blockSize);
+
         mSnake = new Snake(context,
                 new Point(NUM_BLOCKS_WIDE,
                         mNumBlocksHigh),
@@ -126,6 +133,9 @@ class SnakeGame extends SurfaceView implements Runnable{
 
         //Get rotten apples ready
         mRottenApple.spawn();
+
+        //Get the lava ready
+        mLava.spawn();
 
         // Reset the mScore
         mScore = 0;
@@ -181,7 +191,7 @@ class SnakeGame extends SurfaceView implements Runnable{
         // Move the snake
         mSnake.move();
 
-        boolean eatenDinner = mSnake.checkDinner(mApple, mRottenApple);
+        boolean eatenDinner = mSnake.checkDinner(mApple, mRottenApple, mLava);
 
         //Has the snake eaten before?
         if(eatenDinner) {
@@ -232,10 +242,11 @@ class SnakeGame extends SurfaceView implements Runnable{
             // Draw the score
             mCanvas.drawText("" + mScore, 20, 120, mPaint);
 
-            // Draw the apple and the snake
+            // Draw the apple, the snake, & the lava
             mApple.draw(mCanvas, mPaint);
             mRottenApple.draw(mCanvas, mPaint);
             mSnake.draw(mCanvas, mPaint);
+            mLava.draw(mCanvas, mPaint);
 
             // Draw some text while paused
             if(mPaused){

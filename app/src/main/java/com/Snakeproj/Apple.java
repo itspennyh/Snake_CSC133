@@ -85,3 +85,25 @@ class RottenApple extends Apple {
                 location.x * mSize, location.y * mSize, paint);
     }
 }
+
+class Lava extends Apple {
+
+    private Bitmap mBitmapLava;
+
+    //constructor for Lava class
+    public Lava (Context context, Point sr, int s) {
+        super(context, sr, s);
+
+        // Load the image to the bitmap
+        mBitmapLava = BitmapFactory.decodeResource(context.getResources(), R.drawable.lava);
+
+        // Resize the bitmap
+        mBitmapLava = Bitmap.createScaledBitmap(mBitmapLava, s, s, false);
+    }
+
+    @Override
+    void draw(Canvas canvas, Paint paint) {
+        canvas.drawBitmap(mBitmapLava,
+                location.x * mSize, location.y * mSize, paint);
+    }
+}
