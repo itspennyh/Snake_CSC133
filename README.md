@@ -25,4 +25,4 @@ This update added notes on the location of the bug that is now causing runtime i
 2. **Game State bug:** logic error; mPlaying == !mPaused assumption, not true! they are not strictly correlated.
     Around line 166 in SnakeGame.Java, in regards to draw() function.
 
-2a. **Game State Bug Now Fixed**
+2a. **Game State Bug Now Functional** Works for only one loop, then gets stuck on intro load screen.
