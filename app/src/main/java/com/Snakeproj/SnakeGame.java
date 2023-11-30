@@ -149,7 +149,7 @@ class SnakeGame extends SurfaceView implements Runnable{
     // Handles the game loop
     @Override
     public void run() {
-        while (gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.PLAYING) {
+        while (gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.STOPPED) {
 
                 // THIS LINE HERE IS WHERE IT BROKE
                 /*
@@ -163,6 +163,7 @@ class SnakeGame extends SurfaceView implements Runnable{
                 // THIS IS NOT TRUE, and is trying to render snake into non-space
 
                 // Update 10 times a second
+            if (gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.PLAYING)
                 if (updateRequired()) {
                     update();
                 }
@@ -275,7 +276,7 @@ class SnakeGame extends SurfaceView implements Runnable{
     public boolean onTouchEvent(MotionEvent motionEvent) {
         switch (motionEvent.getAction() & MotionEvent.ACTION_MASK) {
             case MotionEvent.ACTION_UP:
-                if (gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.STOPPED) {
+                if (gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.PLAYING) {
                     gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.PLAYING);
                     newGame();
 
@@ -308,7 +309,7 @@ class SnakeGame extends SurfaceView implements Runnable{
 
     // Start the thread
     public void resume() {
-        gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.PLAYING);
+        gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.PAUSED);
         mThread = new Thread(this);
         mThread.start();
     }

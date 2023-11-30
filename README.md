@@ -15,7 +15,7 @@ In this update, I've encountered some issues with the comments in the code. Ther
 
 5. **SoundPool Deprecation:** Note that the `SoundPool` class is marked as deprecated, so we should explore alternatives for handling sound in the game.
 
-### Update 2, v0.2
+### Update 2, v0.3
 
 This update added notes on the location of the bug that is now causing runtime issues. Here are some highlights:
 
@@ -24,3 +24,5 @@ This update added notes on the location of the bug that is now causing runtime i
 
 2. **Game State bug:** logic error; mPlaying == !mPaused assumption, not true! they are not strictly correlated.
     Around line 166 in SnakeGame.Java, in regards to draw() function.
+
+2a. **Game State Bug Now Fixed**
