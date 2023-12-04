@@ -223,7 +223,7 @@ class SnakeGame extends SurfaceView implements Runnable{
             // Pause the game ready to start again
             mSP.play(mCrashID, 1, 1, 0, 0, 1);
 
-            gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.STOPPED);
+            gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.PAUSED);
         }
 
     }
