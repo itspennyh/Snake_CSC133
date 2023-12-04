@@ -27,6 +27,17 @@ class Snake {
     // horizontally in pixels?
     private int halfWayPoint;
 
+    //gets location of snake head
+    public Point getHeadLocation() {
+        if (segmentLocations != null && !segmentLocations.isEmpty()) {
+            //returns first snake segment, the head
+            return segmentLocations.get(0);
+        }
+        else {
+            return null;
+        }
+    }
+
     // For tracking movement Heading
     private enum Heading {
         UP, RIGHT, DOWN, LEFT

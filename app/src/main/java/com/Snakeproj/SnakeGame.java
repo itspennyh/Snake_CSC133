@@ -17,6 +17,7 @@ import android.view.SurfaceView;
 
 
 import java.io.IOException;
+import java.util.List;
 
 class SnakeGame extends SurfaceView implements Runnable{
 
@@ -135,7 +136,7 @@ class SnakeGame extends SurfaceView implements Runnable{
         mRottenApple.spawn();
 
         //Get the lava ready
-        mLava.spawn();
+        mLava.lavaSpawns(5, mApple.getLocation(), mRottenApple.getLocation());
 
         // Reset the mScore
         mScore = 0;
@@ -188,6 +189,12 @@ class SnakeGame extends SurfaceView implements Runnable{
 
     // Update all the game objects
     public void update() {
+        //snake's head location
+        Point snakeHead = mSnake.getHeadLocation();
+
+        //list of lava block locations
+        List<Point> lavaLocations = mLava.getLavaBlocks();
+
         // Move the snake
         mSnake.move();
 
@@ -221,6 +228,16 @@ class SnakeGame extends SurfaceView implements Runnable{
             mPaused = true;
             mSP.play(mCrashID, 1, 1, 0, 0, 1);
 
+        }
+
+        //check for collision with lava
+        for (Point lavaBlocks : lavaLocations) {
+            if (snakeHead.equals(lavaBlocks)) {
+                //collision detected, end game
+                mPaused = true;
+                mSP.play(mCrashID, 1,1, 0, 0, 1);
+                break;
+            }
         }
 
     }

@@ -8,6 +8,8 @@ import android.graphics.Paint;
 import android.graphics.Point;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 class Apple {
@@ -18,7 +20,7 @@ class Apple {
 
     // The range of values we can choose from
     // to spawn an apple
-    private Point mSpawnRange;
+    protected Point mSpawnRange;
     protected int mSize;
 
     // An image to represent the apple
@@ -90,6 +92,9 @@ class Lava extends Apple {
 
     private Bitmap mBitmapLava;
 
+    //storing multiple lava block locations
+    private List<Point> lavaBlocks = new ArrayList<>();
+
     //constructor for Lava class
     public Lava (Context context, Point sr, int s) {
         super(context, sr, s);
@@ -101,9 +106,61 @@ class Lava extends Apple {
         mBitmapLava = Bitmap.createScaledBitmap(mBitmapLava, s, s, false);
     }
 
+    void lavaSpawns(int number, Point regAppleLocation, Point rottenAppleLocation) {
+        Random random = new Random();
+        lavaBlocks.clear();
+
+        //spawns first block
+        int locationx = random.nextInt(mSpawnRange.x - 2) + 1;
+        int locationy = random.nextInt(mSpawnRange.y - 2) + 1;
+        lavaBlocks.add(new Point(locationx, locationy));
+
+        //decide num of lava blocks to spawn up to, currently set to 5 in SnakeGame
+        int lavaNum = random.nextInt(number) + 1;
+
+        //spawning more lava blocks around the first one
+        for (int i = 1; i < lavaNum; i++) {
+            //list of potential new locations
+            List<Point> potentialLocations = new ArrayList<>();
+
+            //check each direction, add to potentialLocations if valid
+            //left
+            checkOverlapAndSpawn(potentialLocations, locationx - 1, locationy, regAppleLocation, rottenAppleLocation);
+            //right
+            checkOverlapAndSpawn(potentialLocations, locationx + 1, locationy, regAppleLocation, rottenAppleLocation);
+            //above
+            checkOverlapAndSpawn(potentialLocations, locationx, locationy - 1, regAppleLocation, rottenAppleLocation);
+            //below
+            checkOverlapAndSpawn(potentialLocations, locationx, locationy + 1, regAppleLocation, rottenAppleLocation);
+
+            //if all are valid, choose a random one
+            if (!potentialLocations.isEmpty()) {
+                Point newLocation = potentialLocations.get(random.nextInt(potentialLocations.size()));
+                //check if location is not already filled with lava block
+                lavaBlocks.add(newLocation);
+            }
+        }
+    }
+
+    //checks potential location before adding lava block to not spawn over regular and rotten apples
+    private void checkOverlapAndSpawn(List<Point> potentialLocations, int x, int y, Point regAppleLocation, Point rottenAppleLocation) {
+        Point newPoint = new Point(x, y);
+        if (x >= 0 && x < mSpawnRange.x && y >= 0 && y < mSpawnRange.y
+            && !newPoint.equals(regAppleLocation) && !newPoint.equals(rottenAppleLocation)
+            && !lavaBlocks.contains(newPoint)) {
+            potentialLocations.add(newPoint);
+        }
+    }
+
     @Override
     void draw(Canvas canvas, Paint paint) {
-        canvas.drawBitmap(mBitmapLava,
-                location.x * mSize, location.y * mSize, paint);
+        for (Point block : lavaBlocks) {
+            canvas.drawBitmap(mBitmapLava, block.x * mSize, block.y * mSize, paint);
+        }
+    }
+
+    //list of all lava block locations
+    List<Point> getLavaBlocks() {
+        return lavaBlocks;
     }
 }
