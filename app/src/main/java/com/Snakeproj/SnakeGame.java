@@ -16,15 +16,18 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+
 import java.io.IOException;
 
 class SnakeGame extends SurfaceView implements Runnable{
 
-    private enum GameState { BEGINNING, IN_GAME, GAME_OVER }
-    private GameState gameState = GameState.BEGINNING;
+    //private enum GameState { BEGINNING, IN_GAME, GAME_OVER }
+    //private GameState gameState = GameState.BEGINNING;
 
-    private enum Difficulty { EASY, MEDIUM, HARD }
-    private Difficulty currentDifficulty = Difficulty.MEDIUM; // Default difficulty
+    // should try to merge it under stt manager, as if playing, can only play on given difficulty
+
+    //private enum Difficulty { EASY, MEDIUM, HARD }
+    //private Difficulty currentDifficulty = Difficulty.MEDIUM; // Default difficulty
 
     private Rect easyButtonRect, mediumButtonRect, hardButtonRect;
     private Paint textPaint, buttonPaint;
@@ -36,9 +39,28 @@ class SnakeGame extends SurfaceView implements Runnable{
     private Thread mThread = null;
     // Control pausing between updates
     private long mNextFrameTime;
-    // Is the game currently playing and or paused?
-    private volatile boolean mPlaying = false;
-    private volatile boolean mPaused = true;
+
+    //private volatile boolean mPlaying = false;
+    //private volatile boolean mPaused = true;
+
+    public enum gmSttMngr {
+        INSTANCE;
+        public enum stt {
+            PLAYING, PAUSED, STOPPED
+        }
+
+        // ingame variables could go here
+        volatile private stt currStt = stt.STOPPED;
+
+        // setter n getters
+        public synchronized void setStt(stt newStt) {
+            this.currStt = newStt;
+        }
+
+        public synchronized stt getCurrStt() {
+            return currStt;
+        }
+    }
 
     // for playing sound effects
     private SoundPool mSP;
@@ -46,7 +68,7 @@ class SnakeGame extends SurfaceView implements Runnable{
     private int mCrashID = -1;
 
     // The size in segments of the playable area
-    private final int NUM_BLOCKS_WIDE = 20;
+    private final int NUM_BLOCKS_WIDE = 40; // 20?
     private int mNumBlocksHigh;
 
     // How many points does the player have
@@ -62,7 +84,7 @@ class SnakeGame extends SurfaceView implements Runnable{
     // And an apple
     private Apple mApple;
 
-    private boolean mGameOver = false;
+    //private boolean mGameOver = false;
     private Rect quitButtonRect;
 
 
@@ -71,7 +93,7 @@ class SnakeGame extends SurfaceView implements Runnable{
     public SnakeGame(Context context, Point size) {
         super(context);
 
-        gameState = GameState.BEGINNING;
+        //gameState = GameState.BEGINNING;
         textPaint = new Paint();
         buttonPaint = new Paint();
 
@@ -124,15 +146,15 @@ class SnakeGame extends SurfaceView implements Runnable{
                         mNumBlocksHigh),
                 blockSize);
 
-        newGame();
+        //newGame(); why is this here?
 
     }
 
     // Called to start a new game
     public void newGame() {
 
-        mGameOver = false;
-        mPaused = false;
+        //mGameOver = false;
+        //mPaused = false;
 
         // reset the snake
         mSnake.reset(NUM_BLOCKS_WIDE, mNumBlocksHigh);
@@ -147,28 +169,43 @@ class SnakeGame extends SurfaceView implements Runnable{
         mNextFrameTime = System.currentTimeMillis();
     }
 
+
     // Handles the game loop
     @Override
     public void run() {
-        while (mPlaying) {
-            if(!mPaused) {
+        while (gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.STOPPED) {
+
+                // THIS LINE HERE IS WHERE IT BROKE
+                /*
+
+                while (mPlaying) { ...
+                if(!mPaused) { ...
+
+                 */
+
+                // snippet logic above was reduced to the one line based on logic that !mPaused == mPlaying
+                // THIS IS NOT TRUE, and is trying to render snake into non-space
+
                 // Update 10 times a second
+            if (gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.PLAYING)
                 if (updateRequired()) {
                     update();
                 }
-            }
+
             draw();
         }
     }
+
 
     // Check to see if it is time for an update
     public boolean updateRequired() {
 
         // Run at 5 frames per second
-        final long TARGET_FPS;
+        final long TARGET_FPS; // was = 10
         // There are 1000 milliseconds in a second
         final long MILLIS_PER_SECOND = 1000;
-
+        // go to line 46 to fix this up, as curr
+        // is using extra vars to handle
         switch(currentDifficulty) {
             case EASY:
                 TARGET_FPS = 5; // Slower for easy
@@ -199,6 +236,7 @@ class SnakeGame extends SurfaceView implements Runnable{
         return false;
     }
 
+
     // Update all the game objects
     public void update() {
 
@@ -220,13 +258,14 @@ class SnakeGame extends SurfaceView implements Runnable{
 
         // Did the snake die?
         if (mSnake.detectDeath()) {
-            mGameOver = true;
-            mPaused = true;
             // Pause the game ready to start again
             mSP.play(mCrashID, 1, 1, 0, 0, 1);
+
+            gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.PAUSED);
         }
 
     }
+
 
     // Do all the drawing
     public void draw() {
@@ -234,7 +273,7 @@ class SnakeGame extends SurfaceView implements Runnable{
         // Get a lock on the mCanvas
         if (mSurfaceHolder.getSurface().isValid()) {
             mCanvas = mSurfaceHolder.lockCanvas();
-
+            // needs to be integrated into singleton design, line 46
             if (gameState == GameState.BEGINNING) {
                 // Clear the canvas
                 mCanvas.drawColor(Color.argb(255, 77, 77, 77));
@@ -289,6 +328,8 @@ class SnakeGame extends SurfaceView implements Runnable{
                 // Fill the screen with a color
                 mCanvas.drawColor(Color.argb(255, 77, 77, 77));
 
+
+            if(gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.PLAYING) {
                 // Set the size and color of the mPaint for the text
                 mPaint.setColor(Color.argb(255, 255, 255, 255));
                 mPaint.setTextSize(150);
@@ -301,6 +342,7 @@ class SnakeGame extends SurfaceView implements Runnable{
                 mSnake.draw(mCanvas, mPaint);
 
                 // Draw some text while pausedG
+                // WAS }else {, looks like god moved up?
                 if(mPaused && !mGameOver){
 
                     // Draw the pause screen
@@ -403,13 +445,45 @@ class SnakeGame extends SurfaceView implements Runnable{
             mSurfaceHolder.unlockCanvasAndPost(mCanvas);
         }
     }
+        /*
+        FROM:
 
+
+
+        @Override
+    public boolean onTouchEvent(MotionEvent motionEvent) {
+        switch (motionEvent.getAction() & MotionEvent.ACTION_MASK) {
+            case MotionEvent.ACTION_UP:
+                if (gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.PLAYING) {
+                    gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.PLAYING);
+                    newGame();
+
+                    // Don't want to process snake direction for this tap
+                    return true;
+                }
+
+                // Let the Snake class handle the input
+                mSnake.switchHeading(motionEvent);
+                break;
+
+            default:
+                break;
+
+        }
+        return true;
+    }
+
+
+
+
+         */
     private void drawCenteredText(Canvas canvas, Paint paint, String text, Rect rect) {
         paint.setTextAlign(Paint.Align.CENTER);
         int xPos = rect.centerX();
         int yPos = (int) (rect.centerY() - ((paint.descent() + paint.ascent()) / 2));
         canvas.drawText(text, xPos, yPos, paint);
     }
+
 
     @Override
     public boolean onTouchEvent(MotionEvent motionEvent) {
@@ -471,8 +545,8 @@ class SnakeGame extends SurfaceView implements Runnable{
     }
 
     // Stop the thread
-    public void pause() {
-        mPlaying = false;
+    public void stop() {
+        gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.STOPPED);
         try {
             mThread.join();
         } catch (InterruptedException e) {
@@ -483,7 +557,7 @@ class SnakeGame extends SurfaceView implements Runnable{
 
     // Start the thread
     public void resume() {
-        mPlaying = true;
+        gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.PAUSED);
         mThread = new Thread(this);
         mThread.start();
     }
