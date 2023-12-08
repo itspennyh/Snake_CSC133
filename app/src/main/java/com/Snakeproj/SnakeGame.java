@@ -30,10 +30,11 @@ class SnakeGame extends SurfaceView implements Runnable{
     //private Difficulty currentDifficulty = Difficulty.MEDIUM; // Default difficulty
 
     private Rect easyButtonRect, mediumButtonRect, hardButtonRect;
-    private Paint textPaint, buttonPaint;
-
     private Rect newGameButtonRect;
     private Rect pauseButtonRect;
+    //private boolean mGameOver = false;
+    private Rect quitButtonRect;
+
 
     // Objects for the game loop/thread
     private Thread mThread = null;
@@ -43,14 +44,18 @@ class SnakeGame extends SurfaceView implements Runnable{
     //private volatile boolean mPlaying = false;
     //private volatile boolean mPaused = true;
 
+    // How many points does the player have
+    private int mScore;
+
     public enum gmSttMngr {
         INSTANCE;
         public enum stt {
-            PLAYING, PAUSED, STOPPED
+            START, PAUSED, STOPPED
         }
 
         // ingame variables could go here
         volatile private stt currStt = stt.STOPPED;
+        // prev state variable may be necessary
 
         // setter n getters
         public synchronized void setStt(stt newStt) {
@@ -71,21 +76,17 @@ class SnakeGame extends SurfaceView implements Runnable{
     private final int NUM_BLOCKS_WIDE = 40; // 20?
     private int mNumBlocksHigh;
 
-    // How many points does the player have
-    private int mScore;
-
     // Objects for drawing
     private Canvas mCanvas;
     private SurfaceHolder mSurfaceHolder;
     private Paint mPaint;
+    private Paint textPaint, buttonPaint;
 
     // A snake ssss
     private Snake mSnake;
     // And an apple
     private Apple mApple;
 
-    //private boolean mGameOver = false;
-    private Rect quitButtonRect;
 
 
     // This is the constructor method that gets called
@@ -187,7 +188,7 @@ class SnakeGame extends SurfaceView implements Runnable{
                 // THIS IS NOT TRUE, and is trying to render snake into non-space
 
                 // Update 10 times a second
-            if (gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.PLAYING)
+            if (gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.START)
                 if (updateRequired()) {
                     update();
                 }
@@ -329,7 +330,7 @@ class SnakeGame extends SurfaceView implements Runnable{
                 mCanvas.drawColor(Color.argb(255, 77, 77, 77));
 
 
-            if(gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.PLAYING) {
+            if(gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.START) {
                 // Set the size and color of the mPaint for the text
                 mPaint.setColor(Color.argb(255, 255, 255, 255));
                 mPaint.setTextSize(150);
@@ -342,7 +343,7 @@ class SnakeGame extends SurfaceView implements Runnable{
                 mSnake.draw(mCanvas, mPaint);
 
                 // Draw some text while pausedG
-                // WAS }else {, looks like god moved up?
+                // WAS }else {, looks like got moved up?
                 if(mPaused && !mGameOver){
 
                     // Draw the pause screen
