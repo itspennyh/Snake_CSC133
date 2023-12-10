@@ -199,7 +199,7 @@ class Snake {
         return false;
     }
 
-    boolean checkDinner(Apple apple, RottenApple rottenApple, Lava lava) {
+    boolean checkDinner(Apple apple, RottenApple rottenApple, Potion potion, Lava lava) {
         Point head = segmentLocations.get(0);
 
         //check for collision with regular apple
@@ -224,6 +224,16 @@ class Snake {
                 return false;
             }
         }
+
+        //check for collision with potion
+        if (head.equals(potion.getLocation())) {
+            //increases body size by 2
+            segmentLocations.add(new Point(-10, -10));
+            segmentLocations.add(new Point(-10, -10));
+            //continue game
+            return true;
+        }
+
         //had lava for dinner :( game over
         if (head.equals(lava.getLocation())) {
             return false;

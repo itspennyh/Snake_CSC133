@@ -88,6 +88,27 @@ class RottenApple extends Apple {
     }
 }
 
+class Potion extends Apple {
+
+    private Bitmap mBitmapPotion;
+
+    public Potion(Context context, Point sr, int s) {
+        super(context, sr, s);
+
+        // Load the image to the bitmap
+        mBitmapPotion = BitmapFactory.decodeResource(context.getResources(), R.drawable.potion);
+
+        // Resize the bitmap
+        mBitmapPotion = Bitmap.createScaledBitmap(mBitmapPotion, s, s, false);
+    }
+
+    @Override
+    void draw(Canvas canvas, Paint paint) {
+        canvas.drawBitmap(mBitmapPotion,
+                location.x * mSize, location.y * mSize, paint);
+    }
+}
+
 class Lava extends Apple {
 
     private Bitmap mBitmapLava;
@@ -106,7 +127,7 @@ class Lava extends Apple {
         mBitmapLava = Bitmap.createScaledBitmap(mBitmapLava, s, s, false);
     }
 
-    void lavaSpawns(int number, Point regAppleLocation, Point rottenAppleLocation) {
+    void lavaSpawns(int number, Point regAppleLocation, Point rottenAppleLocation, Point potionLocation) {
         Random random = new Random();
         lavaBlocks.clear();
 
@@ -125,13 +146,13 @@ class Lava extends Apple {
 
             //check each direction, add to potentialLocations if valid
             //left
-            checkOverlapAndSpawn(potentialLocations, locationx - 1, locationy, regAppleLocation, rottenAppleLocation);
+            checkOverlapAndSpawn(potentialLocations, locationx - 1, locationy, regAppleLocation, rottenAppleLocation, potionLocation);
             //right
-            checkOverlapAndSpawn(potentialLocations, locationx + 1, locationy, regAppleLocation, rottenAppleLocation);
+            checkOverlapAndSpawn(potentialLocations, locationx + 1, locationy, regAppleLocation, rottenAppleLocation, potionLocation);
             //above
-            checkOverlapAndSpawn(potentialLocations, locationx, locationy - 1, regAppleLocation, rottenAppleLocation);
+            checkOverlapAndSpawn(potentialLocations, locationx, locationy - 1, regAppleLocation, rottenAppleLocation, potionLocation);
             //below
-            checkOverlapAndSpawn(potentialLocations, locationx, locationy + 1, regAppleLocation, rottenAppleLocation);
+            checkOverlapAndSpawn(potentialLocations, locationx, locationy + 1, regAppleLocation, rottenAppleLocation, potionLocation);
 
             //if all are valid, choose a random one
             if (!potentialLocations.isEmpty()) {
@@ -143,10 +164,10 @@ class Lava extends Apple {
     }
 
     //checks potential location before adding lava block to not spawn over regular and rotten apples
-    private void checkOverlapAndSpawn(List<Point> potentialLocations, int x, int y, Point regAppleLocation, Point rottenAppleLocation) {
+    private void checkOverlapAndSpawn(List<Point> potentialLocations, int x, int y, Point regAppleLocation, Point rottenAppleLocation, Point potionLocation) {
         Point newPoint = new Point(x, y);
         if (x >= 0 && x < mSpawnRange.x && y >= 0 && y < mSpawnRange.y
-            && !newPoint.equals(regAppleLocation) && !newPoint.equals(rottenAppleLocation)
+            && !newPoint.equals(regAppleLocation) && !newPoint.equals(rottenAppleLocation) && !newPoint.equals(potionLocation)
             && !lavaBlocks.contains(newPoint)) {
             potentialLocations.add(newPoint);
         }
