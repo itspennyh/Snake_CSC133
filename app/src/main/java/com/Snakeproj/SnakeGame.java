@@ -30,7 +30,6 @@ class SnakeGame extends SurfaceView implements Runnable{
     //private Difficulty currentDifficulty = Difficulty.MEDIUM; // Default difficulty
 
     private Rect easyButtonRect, mediumButtonRect, hardButtonRect;
-    private Paint textPaint, buttonPaint;
 
     private Rect newGameButtonRect;
     private Rect pauseButtonRect;
@@ -47,16 +46,15 @@ class SnakeGame extends SurfaceView implements Runnable{
     //private volatile boolean mPaused = true;
 
     // How many points does the player have
-    private int mScore;
 
     public enum gmSttMngr {
         INSTANCE;
         public enum stt {
-            START, EZ, MED, HARD, PAUSED, STOPPED
+            START, EZ, MED, HARD, PAUSED, STOP
         }
 
         // ingame variables could go here
-        volatile private stt currStt = stt.STOPPED;
+        volatile private stt currStt = stt.STOP;
         // prev state variable may be necessary
 
         // setter n getters
@@ -93,7 +91,6 @@ class SnakeGame extends SurfaceView implements Runnable{
     private Apple mApple;
 
     //private boolean mGameOver = false;
-    private Rect quitButtonRect;
 
 
     // This is the constructor method that gets called
@@ -158,11 +155,106 @@ class SnakeGame extends SurfaceView implements Runnable{
 
     }
 
+            /*
+        FROM:
+        @Override
+    public boolean onTouchEvent(MotionEvent motionEvent) {
+        switch (motionEvent.getAction() & MotionEvent.ACTION_MASK) {
+            case MotionEvent.ACTION_UP:
+                if (gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.PLAYING) {
+                    gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.PLAYING);
+                    newGame();
+                    // Don't want to process snake direction for this tap
+                    return true;
+                }
+                // Let the Snake class handle the input
+                mSnake.switchHeading(motionEvent);
+                break;
+            default:
+                break;
+        }
+        return true;
+    }
+         */
+
+    @Override
+    public boolean onTouchEvent(MotionEvent motionEvent) {
+        int x = (int) motionEvent.getX();
+        int y = (int) motionEvent.getY();
+
+        if (gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.START) {
+            if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
+                if (easyButtonRect.contains(x, y)) {
+                    gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.EZ);
+                    newGame();
+                } else if (mediumButtonRect.contains(x, y)) {
+                    gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.MED);
+                    newGame();
+                } else if (hardButtonRect.contains(x, y)) {
+                    gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.HARD);
+                    newGame();
+                }
+            }
+            return true;
+        } else if (gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.STOP) {
+
+            switch (motionEvent.getAction() & MotionEvent.ACTION_MASK) {
+                case MotionEvent.ACTION_DOWN:
+                    if (gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.STOP) {
+                        // Game over screen is active
+                        if (newGameButtonRect.contains(x, y)) {
+                            newGame();
+                            return true;
+                        }
+                        if (quitButtonRect != null && quitButtonRect.contains(x, y)) {
+                            System.exit(0);  // Quit the game
+                            return true;
+                        }
+                    } else {
+                        // Game is not over - handle normal game touch events
+                        if (newGameButtonRect.contains(x, y)) {
+                            mPaused = false;
+                            newGame();
+                            return true;
+                        } else if (pauseButtonRect.contains(x, y)) {
+                            mPaused = !mPaused;
+                            return true;
+                        } else if (!mPaused) {
+                            mSnake.switchHeading(motionEvent);
+                        }
+                    }
+                    break;
+            }
+
+        }
+
+        return true;
+    }
+
+    // Stop the thread
+    public void stop() {
+        gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.STOP);
+        try {
+            mThread.join();
+        } catch (InterruptedException e) {
+            // Error
+        }
+    }
+
+
+    // Start the thread
+    public void resume() {
+        gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.PAUSED);
+        mThread = new Thread(this);
+        mThread.start();
+    }
+
     // Called to start a new game
     public void newGame() {
 
         //mGameOver = false;
         //mPaused = false;
+        gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.START);
 
         // reset the snake
         mSnake.reset(NUM_BLOCKS_WIDE, mNumBlocksHigh);
@@ -181,7 +273,7 @@ class SnakeGame extends SurfaceView implements Runnable{
     // Handles the game loop
     @Override
     public void run() {
-        while (gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.STOPPED) {
+        while (gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.STOP) {
 
                 // THIS LINE HERE IS WHERE IT BROKE
                 /*
@@ -342,230 +434,124 @@ class SnakeGame extends SurfaceView implements Runnable{
                 mCanvas.drawColor(Color.argb(255, 77, 77, 77));
 
 
-            if(gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.START) {
-                // Set the size and color of the mPaint for the text
-                mPaint.setColor(Color.argb(255, 255, 255, 255));
-                mPaint.setTextSize(150);
-
-                // Draw the score
-                mCanvas.drawText("" + mScore, 20, 120, mPaint);
-
-                // Draw the apple and the snake
-                mApple.draw(mCanvas, mPaint);
-                mSnake.draw(mCanvas, mPaint);
-
-                // Draw some text while pausedG
-                // WAS }else {, looks like got moved up?
-                if(mPaused && !mGameOver){
-
-                    // Draw the pause screen
-                    mPaint.setTextSize(60);
-                    mPaint.setColor(Color.WHITE);
-                    mCanvas.drawText("Game Paused. Press Pause to Resume", 100, 350, mPaint);
-
-                }
-
-                // Initialize button paint
-                if (buttonPaint == null) {
-                    buttonPaint = new Paint();
-                    buttonPaint.setColor(Color.BLACK);
-                    buttonPaint.setAlpha(75); // Semi-transparent
-                }
-
-                // Define button positions and sizes
-                int buttonWidth = 200;
-                int buttonHeight = 80;
-                int spacing = 20;
-
-                int totalButtonWidth = buttonWidth * 2 + spacing;
-                int startX = (mCanvas.getWidth() - totalButtonWidth) / 2;
-                int startY = mCanvas.getHeight() - buttonHeight - 50; // Position from bottom
-
-                if (newGameButtonRect == null) {
-                    newGameButtonRect = new Rect(
-                            startX,
-                            startY,
-                            startX + buttonWidth,
-                            startY + buttonHeight
-                    );
-                }
-
-                if (pauseButtonRect == null) {
-                    pauseButtonRect = new Rect(
-                            startX + buttonWidth + spacing,
-                            startY,
-                            startX + totalButtonWidth,
-                            startY + buttonHeight
-                    );
-                }
-
-                // Draw the Quit button (optional)
-                if (quitButtonRect == null) {
-                    quitButtonRect = new Rect(
-                            startX + buttonWidth + spacing,
-                            startY,
-                            startX + totalButtonWidth,
-                            startY + buttonHeight
-                    );
-                }
-
-                // Draw buttons
-                if (!mGameOver) {
-                    mCanvas.drawRect(pauseButtonRect, buttonPaint);
-                    mPaint.setTextSize(70);
-                    mPaint.setColor(Color.WHITE);
-                    mCanvas.drawText("Pause", 1120, 950, mPaint);
-                }
-
-                if (mGameOver) {
-
-                    mCanvas.drawRect(newGameButtonRect, buttonPaint);
-
-                    mPaint.setTextSize(80);
-                    mPaint.setColor(Color.WHITE);
-                    mCanvas.drawText("NG", 950, 950, mPaint);
-
-                    mCanvas.drawRect(quitButtonRect, buttonPaint);
-
-                    mPaint.setTextSize(80);
-                    mPaint.setColor(Color.WHITE);
-                    mCanvas.drawText("Quit", 1150, 950, mPaint);
-
+                if (gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.START) {
                     // Set the size and color of the mPaint for the text
                     mPaint.setColor(Color.argb(255, 255, 255, 255));
-                    mPaint.setTextSize(60);
+                    mPaint.setTextSize(150);
 
-                    // Draw the message
-                    // We will give this an international upgrade soon
-                    mCanvas.drawText("Tap NG to Play a New Game!", 100, 450, mPaint);
+                    // Draw the score
+                    mCanvas.drawText("" + mScore, 20, 120, mPaint);
+
+                    // Draw the apple and the snake
+                    mApple.draw(mCanvas, mPaint);
+                    mSnake.draw(mCanvas, mPaint);
+
+                    // Draw some text while pausedG
+                    // WAS }else {, looks like got moved up?
+                    if (gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.PAUSED) {
+
+                        // Draw the pause screen
+                        mPaint.setTextSize(60);
+                        mPaint.setColor(Color.WHITE);
+                        mCanvas.drawText("Game Paused. Press Pause to Resume", 100, 350, mPaint);
+
+                    }
+
+                    // Initialize button paint
+                    if (buttonPaint == null) {
+                        buttonPaint = new Paint();
+                        buttonPaint.setColor(Color.BLACK);
+                        buttonPaint.setAlpha(75); // Semi-transparent
+                    }
+
+                    // Define button positions and sizes
+                    int buttonWidth = 200;
+                    int buttonHeight = 80;
+                    int spacing = 20;
+
+                    int totalButtonWidth = buttonWidth * 2 + spacing;
+                    int startX = (mCanvas.getWidth() - totalButtonWidth) / 2;
+                    int startY = mCanvas.getHeight() - buttonHeight - 50; // Position from bottom
+
+                    if (newGameButtonRect == null) {
+                        newGameButtonRect = new Rect(
+                                startX,
+                                startY,
+                                startX + buttonWidth,
+                                startY + buttonHeight
+                        );
+                    }
+
+                    if (pauseButtonRect == null) {
+                        pauseButtonRect = new Rect(
+                                startX + buttonWidth + spacing,
+                                startY,
+                                startX + totalButtonWidth,
+                                startY + buttonHeight
+                        );
+                    }
+
+                    // Draw the Quit button (optional)
+                    if (quitButtonRect == null) {
+                        quitButtonRect = new Rect(
+                                startX + buttonWidth + spacing,
+                                startY,
+                                startX + totalButtonWidth,
+                                startY + buttonHeight
+                        );
+                    }
+
+                    // Draw buttons
+                    if (gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.STOP) {
+                        mCanvas.drawRect(pauseButtonRect, buttonPaint);
+                        mPaint.setTextSize(70);
+                        mPaint.setColor(Color.WHITE);
+                        mCanvas.drawText("Pause", 1120, 950, mPaint);
+                    }
+
+                    if (gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.STOP) {
+
+                        mCanvas.drawRect(newGameButtonRect, buttonPaint);
+
+                        mPaint.setTextSize(80);
+                        mPaint.setColor(Color.WHITE);
+                        mCanvas.drawText("NG", 950, 950, mPaint);
+
+                        mCanvas.drawRect(quitButtonRect, buttonPaint);
+
+                        mPaint.setTextSize(80);
+                        mPaint.setColor(Color.WHITE);
+                        mCanvas.drawText("Quit", 1150, 950, mPaint);
+
+                        // Set the size and color of the mPaint for the text
+                        mPaint.setColor(Color.argb(255, 255, 255, 255));
+                        mPaint.setTextSize(60);
+
+                        // Draw the message
+                        // We will give this an international upgrade soon
+                        mCanvas.drawText("Tap NG to Play a New Game!", 100, 450, mPaint);
                 /*mCanvas.drawText(getResources().
                                 getString(R.string.tap_to_play),
                         200, 700, mPaint); */
 
-                    // Draw Game Over text
-                    mPaint.setTextSize(100);
-                    mCanvas.drawText("Game Over!", 100, 350, mPaint);
+                        // Draw Game Over text
+                        mPaint.setTextSize(100);
+                        mCanvas.drawText("Game Over!", 100, 350, mPaint);
 
-                    // Draw Quit Text
-                    mPaint.setTextSize(60);
-                    mCanvas.drawText("Tap Quit to Exit", 100, 550, mPaint);
+                        // Draw Quit Text
+                        mPaint.setTextSize(60);
+                        mCanvas.drawText("Tap Quit to Exit", 100, 550, mPaint);
 
-                }
-
-            }
-
-            // Unlock the mCanvas and reveal the graphics for this frame
-            mSurfaceHolder.unlockCanvasAndPost(mCanvas);
-        }
-    }
-        /*
-        FROM:
-
-
-
-        @Override
-    public boolean onTouchEvent(MotionEvent motionEvent) {
-        switch (motionEvent.getAction() & MotionEvent.ACTION_MASK) {
-            case MotionEvent.ACTION_UP:
-                if (gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.PLAYING) {
-                    gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.PLAYING);
-                    newGame();
-
-                    // Don't want to process snake direction for this tap
-                    return true;
-                }
-
-                // Let the Snake class handle the input
-                mSnake.switchHeading(motionEvent);
-                break;
-
-            default:
-                break;
-
-        }
-        return true;
-    }
-
-
-
-
-         */
-
-
-    @Override
-    public boolean onTouchEvent(MotionEvent motionEvent) {
-        int x = (int) motionEvent.getX();
-        int y = (int) motionEvent.getY();
-
-        if (gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.START) {
-            if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
-                if (easyButtonRect.contains(x, y)) {
-                    currentDifficulty = Difficulty.EASY;
-                    gameState = GameState.IN_GAME;
-                    newGame();
-                } else if (mediumButtonRect.contains(x, y)) {
-                    currentDifficulty = Difficulty.MEDIUM;
-                    gameState = GameState.IN_GAME;
-                    newGame();
-                } else if (hardButtonRect.contains(x, y)) {
-                    currentDifficulty = Difficulty.HARD;
-                    gameState = GameState.IN_GAME;
-                    newGame();
-                }
-            }
-            return true;
-        } else if (gameState == GameState.IN_GAME) {
-
-            switch (motionEvent.getAction() & MotionEvent.ACTION_MASK) {
-                case MotionEvent.ACTION_DOWN:
-                    if (mGameOver) {
-                        // Game over screen is active
-                        if (newGameButtonRect.contains(x, y)) {
-                            mGameOver = false;
-                            mPaused = false;
-                            newGame();
-                            return true;
-                        }
-                        if (quitButtonRect != null && quitButtonRect.contains(x, y)) {
-                            System.exit(0);  // Quit the game
-                            return true;
-                        }
-                    } else {
-                        // Game is not over - handle normal game touch events
-                        if (newGameButtonRect.contains(x, y)) {
-                            mPaused = false;
-                            newGame();
-                            return true;
-                        } else if (pauseButtonRect.contains(x, y)) {
-                            mPaused = !mPaused;
-                            return true;
-                        } else if (!mPaused) {
-                            mSnake.switchHeading(motionEvent);
-                        }
                     }
-                    break;
+
+                }
+
+                // Unlock the mCanvas and reveal the graphics for this frame
+                mSurfaceHolder.unlockCanvasAndPost(mCanvas);
             }
-
         }
 
-        return true;
-    }
 
-    // Stop the thread
-    public void stop() {
-        gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.STOPPED);
-        try {
-            mThread.join();
-        } catch (InterruptedException e) {
-            // Error
-        }
-    }
-
-
-    // Start the thread
-    public void resume() {
-        gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.PAUSED);
-        mThread = new Thread(this);
-        mThread.start();
     }
 }
+
