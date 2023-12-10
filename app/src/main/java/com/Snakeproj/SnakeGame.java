@@ -46,7 +46,7 @@ class SnakeGame extends SurfaceView implements Runnable{
     public enum gmSttMngr {
         INSTANCE;
         public enum stt {
-            PLAYING, PAUSED, STOPPED
+            START, EZ, MED, HARD, PAUSED, STOPPED
         }
 
         // ingame variables could go here
@@ -187,7 +187,7 @@ class SnakeGame extends SurfaceView implements Runnable{
                 // THIS IS NOT TRUE, and is trying to render snake into non-space
 
                 // Update 10 times a second
-            if (gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.PLAYING)
+            if (gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.START)
                 if (updateRequired()) {
                     update();
                 }
@@ -206,11 +206,11 @@ class SnakeGame extends SurfaceView implements Runnable{
         final long MILLIS_PER_SECOND = 1000;
         // go to line 46 to fix this up, as curr
         // is using extra vars to handle
-        switch(currentDifficulty) {
-            case EASY:
+        switch(gmSttMngr.INSTANCE.getCurrStt()) {
+            case EZ:
                 TARGET_FPS = 5; // Slower for easy
                 break;
-            case MEDIUM:
+            case MED:
                 TARGET_FPS = 10; // Normal speed
                 break;
             case HARD:
@@ -266,7 +266,12 @@ class SnakeGame extends SurfaceView implements Runnable{
 
     }
 
-
+    private void drawCenteredText(Canvas canvas, Paint paint, String text, Rect rect) {
+        paint.setTextAlign(Paint.Align.CENTER);
+        int xPos = rect.centerX();
+        int yPos = (int) (rect.centerY() - ((paint.descent() + paint.ascent()) / 2));
+        canvas.drawText(text, xPos, yPos, paint);
+    }
     // Do all the drawing
     public void draw() {
 
@@ -274,7 +279,7 @@ class SnakeGame extends SurfaceView implements Runnable{
         if (mSurfaceHolder.getSurface().isValid()) {
             mCanvas = mSurfaceHolder.lockCanvas();
             // needs to be integrated into singleton design, line 46
-            if (gameState == GameState.BEGINNING) {
+            if (gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.START) {
                 // Clear the canvas
                 mCanvas.drawColor(Color.argb(255, 77, 77, 77));
 
@@ -329,7 +334,7 @@ class SnakeGame extends SurfaceView implements Runnable{
                 mCanvas.drawColor(Color.argb(255, 77, 77, 77));
 
 
-            if(gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.PLAYING) {
+            if(gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.START) {
                 // Set the size and color of the mPaint for the text
                 mPaint.setColor(Color.argb(255, 255, 255, 255));
                 mPaint.setTextSize(150);
@@ -477,12 +482,6 @@ class SnakeGame extends SurfaceView implements Runnable{
 
 
          */
-    private void drawCenteredText(Canvas canvas, Paint paint, String text, Rect rect) {
-        paint.setTextAlign(Paint.Align.CENTER);
-        int xPos = rect.centerX();
-        int yPos = (int) (rect.centerY() - ((paint.descent() + paint.ascent()) / 2));
-        canvas.drawText(text, xPos, yPos, paint);
-    }
 
 
     @Override
@@ -490,7 +489,7 @@ class SnakeGame extends SurfaceView implements Runnable{
         int x = (int) motionEvent.getX();
         int y = (int) motionEvent.getY();
 
-        if (gameState == GameState.BEGINNING) {
+        if (gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.START) {
             if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
                 if (easyButtonRect.contains(x, y)) {
                     currentDifficulty = Difficulty.EASY;
