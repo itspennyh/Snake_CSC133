@@ -55,7 +55,7 @@ class SnakeGame extends SurfaceView implements Runnable{
 
         // ingame variables could go here
         volatile private stt currStt = stt.START;
-        volatile private stt prevStt = stt.STOP;
+        volatile private stt prevStt = stt.START;
         // prev state variable may be necessary
         // setter n getters
         public synchronized void setStt(stt newStt) {
@@ -200,9 +200,7 @@ class SnakeGame extends SurfaceView implements Runnable{
                 }
             }
             return true;
-        } else if (gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.STOP ||
-                gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.PAUSED) {
-
+        } else {
             switch (motionEvent.getAction() & MotionEvent.ACTION_MASK) {
                 case MotionEvent.ACTION_DOWN:
                     if (gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.STOP) {
@@ -216,14 +214,13 @@ class SnakeGame extends SurfaceView implements Runnable{
                             return true;
                         }
                     } else {
-                        // Game is not over - handle normal game touch events
-                        if (newGameButtonRect.contains(x, y)) {
-                            newGame();
-                            return true;
-                        } else if (pauseButtonRect.contains(x, y)) {
-                            //mPaused = !mPaused;
-                            gmSttMngr.INSTANCE.setStt(gmSttMngr.INSTANCE.getPrevStt());
-                            return true;
+                        if (pauseButtonRect.contains(x, y)) {
+                            if(gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.PAUSED) {
+                                gmSttMngr.INSTANCE.setStt(gmSttMngr.INSTANCE.getPrevStt());
+                            } else {
+                                gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.PAUSED);
+                                return true;
+                            }
                         } else if (gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.PAUSED) {
                             mSnake.switchHeading(motionEvent);
                         }
@@ -238,7 +235,7 @@ class SnakeGame extends SurfaceView implements Runnable{
 
     // Stop the thread
     public void stop() {
-        gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.PAUSED);
+        gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.STOP);
         try {
             mThread.join();
         } catch (InterruptedException e) {
@@ -256,7 +253,7 @@ class SnakeGame extends SurfaceView implements Runnable{
 
     // Called to start a new game
     public void newGame() {
-
+        //gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.START);
         // reset the snake
         mSnake.reset(NUM_BLOCKS_WIDE, mNumBlocksHigh);
 
@@ -274,11 +271,10 @@ class SnakeGame extends SurfaceView implements Runnable{
     // Handles the game loop
     @Override
     public void run() {
-        while (gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.STOP ||
-                gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.PAUSED) {
+        while (gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.STOP) {
                 // Update 10 times a second
-            if (gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.START &&
-                    gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.PAUSED &&
+            if (gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.PAUSED &&
+                    gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.START &&
                     gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.STOP)
                 if (updateRequired()) {
                     update();
@@ -309,7 +305,7 @@ class SnakeGame extends SurfaceView implements Runnable{
                 TARGET_FPS = 15; // Faster for hard
                 break;
             default:
-                TARGET_FPS = 10;
+                TARGET_FPS = 2;
         }
 
         // Are we due to update the frame
@@ -353,7 +349,7 @@ class SnakeGame extends SurfaceView implements Runnable{
             // Pause the game ready to start again
             mSP.play(mCrashID, 1, 1, 0, 0, 1);
 
-            gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.PAUSED);
+            gmSttMngr.INSTANCE.setStt(gmSttMngr.stt.STOP);
         }
 
     }
@@ -366,11 +362,9 @@ class SnakeGame extends SurfaceView implements Runnable{
     }
     // Do all the drawing
     public void draw() {
-
         // Get a lock on the mCanvas
         if (mSurfaceHolder.getSurface().isValid()) {
             mCanvas = mSurfaceHolder.lockCanvas();
-            // needs to be integrated into singleton design, line 46
             if (gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.START) {
                 // Clear the canvas
                 mCanvas.drawColor(Color.argb(255, 77, 77, 77));
@@ -378,7 +372,7 @@ class SnakeGame extends SurfaceView implements Runnable{
                 // Draw the title
                 textPaint.setTextSize(100);
                 textPaint.setTextAlign(Paint.Align.CENTER);
-                mCanvas.drawText("Select Difficulty", mCanvas.getWidth() / 2, 300, textPaint);
+                mCanvas.drawText("Select Difficulty To Start", mCanvas.getWidth() / 2, 300, textPaint);
 
                 // Draw difficulty buttons
                 int buttonWidth = mCanvas.getWidth() - 200; // Width of the button
@@ -437,7 +431,6 @@ class SnakeGame extends SurfaceView implements Runnable{
                 mSnake.draw(mCanvas, mPaint);
 
                     // Draw some text while pausedG
-                    // WAS }else {, looks like got moved up?
                     if (gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.PAUSED) {
 
                         // Draw the pause screen
@@ -492,7 +485,7 @@ class SnakeGame extends SurfaceView implements Runnable{
                     }
 
                     // Draw buttons
-                    if (gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.PAUSED) {
+                    if (gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.STOP) {
                         mCanvas.drawRect(pauseButtonRect, buttonPaint);
                         mPaint.setTextSize(70);
                         mPaint.setColor(Color.WHITE);
