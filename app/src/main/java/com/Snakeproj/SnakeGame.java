@@ -34,6 +34,9 @@ class SnakeGame extends SurfaceView implements Runnable{
 
     private Rect newGameButtonRect;
     private Rect pauseButtonRect;
+    //private boolean mGameOver = false;
+    private Rect quitButtonRect;
+
 
     // Objects for the game loop/thread
     private Thread mThread = null;
@@ -43,6 +46,9 @@ class SnakeGame extends SurfaceView implements Runnable{
     //private volatile boolean mPlaying = false;
     //private volatile boolean mPaused = true;
 
+    // How many points does the player have
+    private int mScore;
+
     public enum gmSttMngr {
         INSTANCE;
         public enum stt {
@@ -51,6 +57,7 @@ class SnakeGame extends SurfaceView implements Runnable{
 
         // ingame variables could go here
         volatile private stt currStt = stt.STOPPED;
+        // prev state variable may be necessary
 
         // setter n getters
         public synchronized void setStt(stt newStt) {
@@ -78,6 +85,7 @@ class SnakeGame extends SurfaceView implements Runnable{
     private Canvas mCanvas;
     private SurfaceHolder mSurfaceHolder;
     private Paint mPaint;
+    private Paint textPaint, buttonPaint;
 
     // A snake ssss
     private Snake mSnake;
@@ -347,7 +355,7 @@ class SnakeGame extends SurfaceView implements Runnable{
                 mSnake.draw(mCanvas, mPaint);
 
                 // Draw some text while pausedG
-                // WAS }else {, looks like god moved up?
+                // WAS }else {, looks like got moved up?
                 if(mPaused && !mGameOver){
 
                     // Draw the pause screen
