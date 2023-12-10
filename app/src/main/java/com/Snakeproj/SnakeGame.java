@@ -55,15 +55,19 @@ class SnakeGame extends SurfaceView implements Runnable{
 
         // ingame variables could go here
         volatile private stt currStt = stt.STOP;
+        volatile private stt prevStt = stt.STOP;
         // prev state variable may be necessary
-
         // setter n getters
         public synchronized void setStt(stt newStt) {
+            this.prevStt = this.currStt;
             this.currStt = newStt;
         }
 
         public synchronized stt getCurrStt() {
             return currStt;
+        }
+        public synchronized stt getPrevStt() {
+            return prevStt;
         }
     }
 
@@ -151,7 +155,7 @@ class SnakeGame extends SurfaceView implements Runnable{
                         mNumBlocksHigh),
                 blockSize);
 
-        //newGame(); why is this here?
+        newGame(); //why is this here?
 
     }
 
@@ -213,13 +217,13 @@ class SnakeGame extends SurfaceView implements Runnable{
                     } else {
                         // Game is not over - handle normal game touch events
                         if (newGameButtonRect.contains(x, y)) {
-                            mPaused = false;
                             newGame();
                             return true;
                         } else if (pauseButtonRect.contains(x, y)) {
-                            mPaused = !mPaused;
+                            //mPaused = !mPaused;
+                            gmSttMngr.INSTANCE.setStt(gmSttMngr.INSTANCE.getPrevStt());
                             return true;
-                        } else if (!mPaused) {
+                        } else if (gmSttMngr.INSTANCE.getCurrStt() != gmSttMngr.stt.PAUSED) {
                             mSnake.switchHeading(motionEvent);
                         }
                     }
@@ -433,18 +437,16 @@ class SnakeGame extends SurfaceView implements Runnable{
                 // Fill the screen with a color
                 mCanvas.drawColor(Color.argb(255, 77, 77, 77));
 
+                // Set the size and color of the mPaint for the text
+                mPaint.setColor(Color.argb(255, 255, 255, 255));
+                mPaint.setTextSize(150);
 
-                if (gmSttMngr.INSTANCE.getCurrStt() == gmSttMngr.stt.START) {
-                    // Set the size and color of the mPaint for the text
-                    mPaint.setColor(Color.argb(255, 255, 255, 255));
-                    mPaint.setTextSize(150);
+                // Draw the score
+                mCanvas.drawText("" + mScore, 20, 120, mPaint);
 
-                    // Draw the score
-                    mCanvas.drawText("" + mScore, 20, 120, mPaint);
-
-                    // Draw the apple and the snake
-                    mApple.draw(mCanvas, mPaint);
-                    mSnake.draw(mCanvas, mPaint);
+                // Draw the apple and the snake
+                mApple.draw(mCanvas, mPaint);
+                mSnake.draw(mCanvas, mPaint);
 
                     // Draw some text while pausedG
                     // WAS }else {, looks like got moved up?
@@ -552,6 +554,6 @@ class SnakeGame extends SurfaceView implements Runnable{
         }
 
 
-    }
+
 }
 
